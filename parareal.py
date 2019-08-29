@@ -17,8 +17,6 @@ class Parareal:
         self.amount_steps = self.amount_steps - (self.amount_steps % p)
         self.coarse_vector = np.zeros(p)
         self.delta_t_coarse = (stop_time - start_time) / p       # coarse time steps
-        print("delta t coarse is")
-        print(self.delta_t_coarse)
         self.time_intervals = self.split_time_in_intervals(start_time, stop_time, p)
         self.t_start = start_time
         self.t_stop = stop_time
@@ -34,10 +32,6 @@ class Parareal:
 
     def run(self):
         vec = self.coarse_func(self.t_start, self.t_stop+self.delta_t, self.u_0, self.delta_t_coarse)
-        print("Vector is")
-        print(vec)
-        print("Time intervals are")
-        print(self.time_intervals)
         for k in range(self.K):
             tmp = np.zeros(self.p+1)
             tmp[0] = vec[0] # initial value
@@ -57,6 +51,11 @@ class Parareal:
             vec = tmp
         return vec
 
+    def run_with_new(self, delta_t):
+        self.delta_t = delta_t
+        self.amount_steps = int((stop_time - start_time)/delta_t)
+
+
 
 def coarse_func(start, stop, initial_value, delta_t):
     x, y = rung.run_with_new(initial_value, delta_t, start, stop)
@@ -68,16 +67,52 @@ def fine_func(start, stop, initial_value, delta_t):
     return y
 
 
-p = 50
-K = 10
-delta_t = 0.01
+if __name__ == "__main__":
+    p = 30
+    K = 10
+    delta_t = 0.1
 
-rung4 = RungeKutta(-2.0 * np.pi, 1, 4, 1, 1, t_start=0)
-rung = RungeKutta(-2.0 * np.pi, 1, 2, 1, 1, t_start=0)
-para = Parareal(coarse_func, fine_func, p, K, delta_t, 3.0, start_time=0.0, stop_time=7.183)
-print("result is")
-y = para.run()
-print(y)
-time = np.linspace(0.0, 7.183, p+1)
-plt.plot(time, y)
-plt.show()
+    rung4 = RungeKutta(-2.0 * np.pi, 1, 4, 1, 1, t_start=0)
+    rung = RungeKutta(-2.0 * np.pi, 1, 2, 1, 1, t_start=0)
+    para = Parareal(coarse_func, fine_func, p, 2, delta_t, 3.0, start_time=0.0, stop_time=7.183)
+    y = para.run()
+    para2 = Parareal(coarse_func, fine_func, p, 5, delta_t, 3.0, start_time=0.0, stop_time=7.183)
+    y2 = para2.run()
+    time = np.linspace(0.0, 7.183, p+1)
+    exact = 3.0 * np.exp(-2.0 * np.pi * time)
+    plt.plot(time, exact, 'bx--', label="exact")
+    plt.plot(time, y, 'ro', label="K=2")
+    plt.plot(time, y2, 'go', label="K=5")
+    plt.xlabel('time [s]')
+    plt.ylabel('value')
+    plt.legend()
+    plt.show()
+
+    start_time = 0.0
+    stop_time = 7.0
+
+    compare_num = 10
+    error_1 = np.zeros(compare_num)
+    error_2 = np.zeros(compare_num)
+    error_3 = np.zeros(compare_num)
+    dt_axis = []
+    dt_axis.append(0.25)
+    for count in range(compare_num):
+        delta_t = dt_axis[count]
+        tmp, y = para.run_with_new(3.0, delta_t, start_time, stop_time)
+        exact = 3.0 * np.exp(-2.0 * np.pi * tmp)
+        # error_1[count] = np.average(np.abs(y - exact) / np.abs(exact))
+        error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        tmp, y = rung_2.run_with_new(3.0, delta_t, start_time, stop_time)
+        # error_2[count] = np.average(np.abs(y - exact) / np.abs(exact))
+        error_2[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        tmp, y = rung_3.run_with_new(3.0, delta_t, start_time, stop_time)
+        # error_3[count] = np.average(np.abs(y - exact) / np.abs(exact))
+        error_3[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        if count != compare_num-1:
+            dt_axis.append(delta_t/2.0)
+    plt.loglog(dt_axis, error_1, 'rx--', label="order 2")
+    plt.loglog(dt_axis, error_2, 'gx--', label="order 4")
+    plt.loglog(dt_axis, error_3, 'yx--', label="order 6")
+    plt.legend()
+    plt.show()

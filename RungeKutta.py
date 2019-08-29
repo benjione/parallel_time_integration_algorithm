@@ -104,20 +104,47 @@ class RungeKutta:
 if __name__ == "__main__":
     delta_t = 0.1
     start_time = 0.0
-    stop_time = 7.183
+    stop_time = 7.0
 
-    rung = RungeKutta(-2.0 * np.pi, 3.0, 1, delta_t, stop_time)
+    rung = RungeKutta(-2.0 * np.pi, 3.0, 2, delta_t, stop_time)
     x, y = rung.run()
-    rung = RungeKutta(-2.0 * np.pi, 3.0, 4, delta_t, stop_time)
-    x, y_2 = rung.run()
+    rung_2 = RungeKutta(-2.0 * np.pi, 3.0, 4, delta_t, stop_time)
+    x, y_2 = rung_2.run()
+    rung_3 = RungeKutta(-2.0 * np.pi, 3.0, 6, delta_t, stop_time)
+    x, y_3 = rung_3.run()
     exact = 3.0 * np.exp(-2.0 * np.pi * x)
-    error = np.abs(y_2[-1] - exact[-1])/np.abs(exact[-1])
-    print("Error for order 4 is: %f" % error)
-    print(error)
     plt.plot(x, exact, 'bx--', label="exact")
-    plt.plot(x,y, 'ro', label="order 1")
+    plt.plot(x,y, 'ro', label="order 2")
     plt.plot(x,y_2, 'go', label="order 4")
+    plt.plot(x,y_3, 'yo', label="order 6")
     plt.xlabel('time [s]')
     plt.ylabel('value')
+    plt.legend()
+    plt.show()
+    compare_num = 10
+    error_1 = np.zeros(compare_num)
+    error_2 = np.zeros(compare_num)
+    error_3 = np.zeros(compare_num)
+    dt_axis = []
+    dt_axis.append(0.25)
+    for count in range(compare_num):
+        delta_t = dt_axis[count]
+        tmp, y = rung.run_with_new(3.0, delta_t, start_time, stop_time)
+        exact = 3.0 * np.exp(-2.0 * np.pi * tmp)
+        # error_1[count] = np.average(np.abs(y - exact) / np.abs(exact))
+        error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        tmp, y = rung_2.run_with_new(3.0, delta_t, start_time, stop_time)
+        # error_2[count] = np.average(np.abs(y - exact) / np.abs(exact))
+        error_2[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        tmp, y = rung_3.run_with_new(3.0, delta_t, start_time, stop_time)
+        # error_3[count] = np.average(np.abs(y - exact) / np.abs(exact))
+        error_3[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        if count != compare_num-1:
+            dt_axis.append(delta_t/2.0)
+    plt.loglog(dt_axis, error_1, 'rx--', label="order 2")
+    plt.loglog(dt_axis, error_2, 'gx--', label="order 4")
+    plt.loglog(dt_axis, error_3, 'yx--', label="order 6")
+    plt.xlabel('delta_t [s]')
+    plt.ylabel('error')
     plt.legend()
     plt.show()
