@@ -123,14 +123,14 @@ def fine_function(rung, start, stop, initial_value, delta_t):
     return y
 
 
-lamb = -0.1
+lamb = -1.0
 initial = 3.0
 
 if __name__ == "__main__":
-    p = 8
+    p = 7
     K_1 = 2
-    K_2 = 5
-    K_3 = 10
+    K_2 = 4
+    K_3 = 6
     delta_t = 0.05
 
     rung4 = RungeKutta(lamb, 1, 4, 1, 1, t_start=0)
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     time = np.linspace(0.0, 7.183, p+1)
     exact = initial * np.exp(lamb * time)
     plt.plot(time, exact, 'bx--', label="exact")
-    plt.plot(time, y, 'ro', label="K=2")
-    plt.plot(time, y2, 'go', label="K=5")
-    plt.plot(time, y3, 'yo', label="K=10")
+    plt.plot(time, y, 'ro', label="K=%d" % K_1)
+    plt.plot(time, y2, 'go', label="K=%d" % K_2)
+    plt.plot(time, y3, 'yo', label="K=%d" % K_3)
     plt.xlabel('time [s]')
     plt.ylabel('value')
     plt.legend()
@@ -167,9 +167,9 @@ if __name__ == "__main__":
     start_time = 0.0
     stop_time = 7.0
 
-    para = Parareal(coarse_func, fine_func, p, 2, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
-    para2 = Parareal(coarse_func, fine_func, p, 5, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
-    para3 = Parareal(coarse_func, fine_func, p, 10, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
+    para = Parareal(coarse_func, fine_func, p, K_1, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
+    para2 = Parareal(coarse_func, fine_func, p, K_2, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
+    para3 = Parareal(coarse_func, fine_func, p, K_3, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
 
     compare_num = 8
 
@@ -184,22 +184,22 @@ if __name__ == "__main__":
     for count in range(compare_num):
         delta_t = dt_axis[count]
         y = para.run_with_new(delta_t, start_time, stop_time)
-        # error_1[count] = np.average(np.abs(y - exact) / np.abs(exact))
-        error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        error_1[count] = np.amax(np.abs(y - exact) / np.abs(exact))
+        # error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
         y = para2.run_with_new(delta_t, start_time, stop_time)
-        # error_2[count] = np.average(np.abs(y - exact) / np.abs(exact))
-        error_2[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        error_2[count] = np.amax(np.abs(y - exact) / np.abs(exact))
+        # error_2[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
         y = para3.run_with_new(delta_t, start_time, stop_time)
-        # error_3[count] = np.average(np.abs(y - exact) / np.abs(exact))
-        error_3[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        error_3[count] = np.amax(np.abs(y - exact) / np.abs(exact))
+        # error_3[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
         if count != compare_num-1:
             dt_axis.append(delta_t/2.0)
 
-    plt.loglog(dt_axis, error_1, 'rx--', label="K=2")
-    plt.loglog(dt_axis, error_2, 'gx--', label="K=5")
-    plt.loglog(dt_axis, error_3, 'yx--', label="K=10")
+    plt.loglog(dt_axis, error_1, 'rx--', label="K=%d" % K_1)
+    plt.loglog(dt_axis, error_2, 'gx--', label="K=%d" % K_2)
+    plt.loglog(dt_axis, error_3, 'yx--', label="K=%d" % K_3)
     plt.xlabel('delta_t')
-    plt.ylabel('error')
+    plt.ylabel('error using $L_{\infty}$')
     plt.legend()
     plt.show()
 
@@ -208,10 +208,10 @@ if __name__ == "__main__":
     error_1 = np.zeros(K)
 
     for k in range(K):
-        y = para.run_with_new(0.05, start_time, stop_time, K=k)
-        error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
+        y = para.run_with_new(0.01, start_time, stop_time, K=k)
+        error_1[count] = np.amax(np.abs(y - exact) / np.abs(exact))
     k_axis = np.linspace(1, K, K)
-    plt.semilogy(k_axis, error_1, 'bx--')
+    plt.plot(k_axis, error_1, 'bx--')
     plt.xlabel('iterations k')
     plt.ylabel('error')
     plt.show()
