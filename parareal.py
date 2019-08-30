@@ -1,6 +1,7 @@
 import numpy as np
 from RungeKutta import RungeKutta
 import matplotlib.pyplot as plt
+from functools import partial as fp
 
 
 class Parareal:
@@ -112,35 +113,42 @@ class Parareal:
         return self.run()
 
 
-
-def coarse_func(start, stop, initial_value, delta_t):
+def coarse_function(rung, start, stop, initial_value, delta_t):
     x, y = rung.run_with_new(initial_value, delta_t, start, stop)
     return y
 
 
-def fine_func(start, stop, initial_value, delta_t):
-    x, y = rung4.run_with_new(initial_value, delta_t, start, stop)
+def fine_function(rung, start, stop, initial_value, delta_t):
+    x, y = rung.run_with_new(initial_value, delta_t, start, stop)
     return y
 
+
+lamb = -0.1
+initial = 3.0
 
 if __name__ == "__main__":
     p = 8
     K_1 = 2
-    K_2 = 10
-    delta_t = 0.01
+    K_2 = 5
+    K_3 = 10
+    delta_t = 0.05
 
-    rung4 = RungeKutta(-2.0 * np.pi, 1, 4, 1, 1, t_start=0)
-    rung = RungeKutta(-2.0 * np.pi, 1, 2, 1, 1, t_start=0)
+    rung4 = RungeKutta(lamb, 1, 4, 1, 1, t_start=0)
+    rung = RungeKutta(lamb, 1, 2, 1, 1, t_start=0)
+    coarse_func = fp(coarse_function, rung)
+    fine_func = fp(fine_function, rung4)
     para = Parareal(coarse_func, fine_func, p, K_1, delta_t, 3.0, start_time=0.0, stop_time=7.183)
     y, i_value = para.run_result_per_iter()
-    print(y)
     para2 = Parareal(coarse_func, fine_func, p, K_2, delta_t, 3.0, start_time=0.0, stop_time=7.183)
     y2, i_value2 = para2.run_result_per_iter()
+    para3 = Parareal(coarse_func, fine_func, p, K_3, delta_t, 3.0, start_time=0.0, stop_time=7.183)
+    y3, i_value3 = para3.run_result_per_iter()
     time = np.linspace(0.0, 7.183, p+1)
-    exact = 3.0 * np.exp(-2.0 * np.pi * time)
+    exact = initial * np.exp(lamb * time)
     plt.plot(time, exact, 'bx--', label="exact")
     plt.plot(time, y, 'ro', label="K=2")
     plt.plot(time, y2, 'go', label="K=5")
+    plt.plot(time, y3, 'yo', label="K=10")
     plt.xlabel('time [s]')
     plt.ylabel('value')
     plt.legend()
@@ -148,9 +156,10 @@ if __name__ == "__main__":
 
     iter_k_1 = np.linspace(1, K_1, K_1)
     iter_k_2 = np.linspace(1, K_2, K_2)
+    iter_k_3 = np.linspace(1, K_3, K_3)
 
     # plt.plot(iter_k_1, i_delta[range(K_1), [-1]])
-    plt.plot(iter_k_2, i_value2[range(K_2), [-1]])
+    plt.plot(iter_k_3, i_value3[range(K_3), [-1]])
     plt.xlabel('iterations K')
     plt.ylabel('value')
     plt.show()
@@ -158,14 +167,14 @@ if __name__ == "__main__":
     start_time = 0.0
     stop_time = 7.0
 
-    para = Parareal(coarse_func, fine_func, p, 5, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
-    para2 = Parareal(coarse_func, fine_func, p, 10, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
-    para3 = Parareal(coarse_func, fine_func, p, 20, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
+    para = Parareal(coarse_func, fine_func, p, 2, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
+    para2 = Parareal(coarse_func, fine_func, p, 5, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
+    para3 = Parareal(coarse_func, fine_func, p, 10, delta_t, 3.0, start_time=start_time, stop_time=stop_time)
 
-    compare_num = 10
+    compare_num = 8
 
     time = np.linspace(start_time, stop_time, p+1)
-    exact = 3.0 * np.exp(-2.0 * np.pi * time)
+    exact = initial * np.exp(lamb * time)
 
     error_1 = np.zeros(compare_num)
     error_2 = np.zeros(compare_num)
@@ -175,7 +184,6 @@ if __name__ == "__main__":
     for count in range(compare_num):
         delta_t = dt_axis[count]
         y = para.run_with_new(delta_t, start_time, stop_time)
-        print(y)
         # error_1[count] = np.average(np.abs(y - exact) / np.abs(exact))
         error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
         y = para2.run_with_new(delta_t, start_time, stop_time)
@@ -187,18 +195,23 @@ if __name__ == "__main__":
         if count != compare_num-1:
             dt_axis.append(delta_t/2.0)
 
-    plt.loglog(dt_axis, error_1, 'rx--', label="K=5")
-    plt.loglog(dt_axis, error_2, 'gx--', label="K=10")
-    plt.loglog(dt_axis, error_3, 'yx--', label="K=20")
+    plt.loglog(dt_axis, error_1, 'rx--', label="K=2")
+    plt.loglog(dt_axis, error_2, 'gx--', label="K=5")
+    plt.loglog(dt_axis, error_3, 'yx--', label="K=10")
+    plt.xlabel('delta_t')
+    plt.ylabel('error')
     plt.legend()
     plt.show()
 
 
     K = 10
+    error_1 = np.zeros(K)
 
     for k in range(K):
         y = para.run_with_new(0.05, start_time, stop_time, K=k)
         error_1[count] = np.abs(y[-1] - exact[-1]) / np.abs(exact[-1])
     k_axis = np.linspace(1, K, K)
     plt.semilogy(k_axis, error_1, 'bx--')
+    plt.xlabel('iterations k')
+    plt.ylabel('error')
     plt.show()
